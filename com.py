@@ -12,6 +12,7 @@ class _DeviceProcess(Process):
         super(_DeviceProcess, self).__init__()
         self.fifoin = FIFOreception
         self.fifoout = FIFOenvoi
+
     def lecture(self, name):
         """ Read the device informations """
         print(name +' started')
@@ -29,7 +30,8 @@ class _DeviceProcess(Process):
                 tosend = self.fifoout.get()
                 self.dev.write(tosend)
     def run(self):
-        self.dev = pylibftdi.Device()#pylint: disable=W0201
+        from pylibftdi import Device
+        self.dev = Device()#pylint: disable=W0201
         self.dev.baudrate = 230400
         writing = Thread(target=self.write, args=("Thread-write",))
         writing.start()
@@ -43,10 +45,9 @@ class HDevice:
         self.fifoin = Queue()
         self.fifoout = Queue()
         self.proto = proto
+            
         if proto == "ftdi":
-            globals()["pylibftdi"] = __import__("pylibftdi")
-            #from pylibftdi import Device
-        self.processdev = _DeviceProcess(self.fifoin, self.fifoout)
+            self.processdev = _DeviceProcess(self.fifoin, self.fifoout)
     def launch(self):
         """ Launch the process for device communication """
         self.processdev.start()
