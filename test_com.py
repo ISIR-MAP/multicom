@@ -7,7 +7,7 @@ import com
 class TestFonctionDevice(unittest.TestCase):
     """ Device functions tests """
     def setUp(self):
-        self.hapticd = com.HDevice()
+        self.hapticd = com.HDevice("ftdi")
     def test_extract(self):
         """ Test extract function """
         size = 5

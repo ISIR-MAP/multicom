@@ -5,7 +5,6 @@ Created on Thu Jun 16 17:54:49 2016
 """
 from threading import Thread
 from multiprocessing import Process, Queue
-from pylibftdi import Device
 
 class _DeviceProcess(Process):
     """ Process for in/out control """
@@ -39,10 +38,13 @@ class _DeviceProcess(Process):
 #DEV = Device()
 class HDevice:
     """ Function to read/write to device """
-    def __init__(self):
+    def __init__(self, proto):
         super(HDevice, self).__init__()
         self.fifoin = Queue()
         self.fifoout = Queue()
+        self.proto = proto
+        if proto == "ftdi":
+            from pylibftdi import Device
         self.processdev = _DeviceProcess(self.fifoin, self.fifoout)
     def launch(self):
         """ Launch the process for device communication """
