@@ -3,7 +3,7 @@ import unittest
 import time
 import com
 import random
-
+import sys
 class TestFonctionDevice(unittest.TestCase):
     """ Device functions tests """
     def setUp(self):
@@ -59,6 +59,11 @@ class TestFonctionDevice(unittest.TestCase):
         bufenvoi[3] = int('0b11000000', 2)
         self.hapticd.write(tosend)
         self.assertEqual(bufenvoi, self.hapticd.fifoout.get())
+    def teststartstop(self):
+        """ Launch and quit """
+        self.hapticd.launch()
+        time.sleep(1)
+        self.hapticd.quit()
 
 class TestFonctionDeviceSerial(unittest.TestCase):
     """ Device functions tests """
@@ -94,5 +99,10 @@ class TestFonctionDeviceSerial(unittest.TestCase):
         retour = self.hapticd.readsep(r"\|", size)[0]
         for i in range(0, size):
             self.assertEqual(float(retour[i]), result[i])
+    def teststartstop(self):
+        """ Launch and quit """
+        self.hapticd.launch()
+        time.sleep(1)
+        self.hapticd.quit()
 if __name__ == '__main__':
     unittest.main()

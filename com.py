@@ -30,9 +30,12 @@ class _DeviceProcess(Process):
                 tosend = self.fifoout.get()
                 self.dev.write(tosend)
     def run(self):
-        from pylibftdi import Device
-        self.dev = Device()#pylint: disable=W0201
-        self.dev.baudrate = 230400
+        import pylibftdi
+        try:
+            self.dev = pylibftdi.Device()#pylint: disable=W0201
+            self.dev.baudrate = 230400
+        except pylibftdi._base.FtdiError:
+            print('haptic device not found')
         writing = Thread(target=self.write, args=("Thread-write",))
         writing.start()
         lecturing = Thread(target=self.lecture, args=("Thread-read",))
@@ -64,7 +67,10 @@ class _DeviceProcessserial(Process):
                 self.dev.write(tosend)
     def run(self):
         import serial
-        self.dev = serial.Serial(self.com, 115200, timeout=None)#pylint: disable=W0201
+        try:
+            self.dev = serial.Serial(self.com, 115200, timeout=None)#pylint: disable=W0201
+        except serial.serialutil.SerialException:
+            print('haptic device not found')
         writing = Thread(target=self.write, args=("Thread-write",))
         writing.start()
         lecturing = Thread(target=self.lecture, args=("Thread-read",))
@@ -83,6 +89,7 @@ class HDevice:
         else:
             import re
             globals()["re"] = re
+            self.processdev = _DeviceProcessserial(self.fifoin, self.fifoout, self.proto)
     def launch(self):
         """ Launch the process for device communication """
         self.processdev.start()
