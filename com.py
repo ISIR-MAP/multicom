@@ -44,7 +44,8 @@ class HDevice:
         self.fifoout = Queue()
         self.proto = proto
         if proto == "ftdi":
-            from pylibftdi import Device
+            globals()["Device"] = __import__("pylibftdi", fromlist=["Device"])
+            #from pylibftdi import Device
         self.processdev = _DeviceProcess(self.fifoin, self.fifoout)
     def launch(self):
         """ Launch the process for device communication """
