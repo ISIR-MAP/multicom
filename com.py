@@ -37,6 +37,39 @@ class _DeviceProcess(Process):
         writing.start()
         lecturing = Thread(target=self.lecture, args=("Thread-read",))
         lecturing.start()
+
+class _DeviceProcessserial(Process):
+    """ Process for in/out control in serial """
+    def __init__(self, FIFOreception, FIFOenvoi, com):
+        super(_DeviceProcessserial, self).__init__()
+        self.fifoin = FIFOreception
+        self.fifoout = FIFOenvoi
+        self.com = com
+
+    def lecture(self, name):
+        """ Read the device informations """
+        print(name +' started')
+        while True:
+            try:
+                self.fifoin.put(self.dev.readline())
+            except (KeyboardInterrupt, SystemExit):
+                print("Exiting lecture...")
+                break
+    def write(self, name):
+        """ Write the information to the device """
+        print(name +' started')
+        while True:
+            if self.fifoout.qsize() >= 1:
+                tosend = self.fifoout.get()
+                self.dev.write(tosend)
+    def run(self):
+        import serial
+        self.dev = serial.Serial(self.com, 115200, timeout=None)#pylint: disable=W0201
+        writing = Thread(target=self.write, args=("Thread-write",))
+        writing.start()
+        lecturing = Thread(target=self.lecture, args=("Thread-read",))
+        lecturing.start()
+
 #DEV = Device()
 class HDevice:
     """ Function to read/write to device """
@@ -45,9 +78,11 @@ class HDevice:
         self.fifoin = Queue()
         self.fifoout = Queue()
         self.proto = proto
-            
         if proto == "ftdi":
             self.processdev = _DeviceProcess(self.fifoin, self.fifoout)
+        else:
+            import re
+            globals()["re"] = re
     def launch(self):
         """ Launch the process for device communication """
         self.processdev.start()
@@ -62,11 +97,23 @@ class HDevice:
         """ Extract 'size' bytes from 'fifo' and return a bytearray """
         rec = bytearray([0]*size)
         for i in range(0, size):
-            rec[i] = int.from_bytes(self.fifoin.get(), 'big')
+            rec[i] = int.from_bytes(self.get(), 'big')
         return rec
     def readarray(self, size):
         """ read a bytearray from device """
         return bytearray(self.extract(size))
+    def readascii(self):
+        """ read data in ascii from serial port """
+        data = self.get()
+        return data.decode('ascii','backslashreplace')
+    def readsep(self, sep, size):
+        """ read data using Regexp """
+        data = self.readascii()
+        regexp = ""
+        for i in range(0,size):
+            regexp = regexp + r"([0-9]+(?:\.[0-9]+)?)(?:" + sep + ")"
+        #regexp = r"([0-9]+(?:\.[0-9]+)?)(?:\|)([0-9]+(?:\.[0-9]+)?)"
+        return re.findall(regexp, data)
     def incommingsize(self):
         """get the incomming buffer size"""
         return self.fifoin.qsize()

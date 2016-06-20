@@ -2,7 +2,7 @@
 import unittest
 import time
 import com
-
+import random
 
 class TestFonctionDevice(unittest.TestCase):
     """ Device functions tests """
@@ -59,5 +59,40 @@ class TestFonctionDevice(unittest.TestCase):
         bufenvoi[3] = int('0b11000000', 2)
         self.hapticd.write(tosend)
         self.assertEqual(bufenvoi, self.hapticd.fifoout.get())
+
+class TestFonctionDeviceSerial(unittest.TestCase):
+    """ Device functions tests """
+    def setUp(self):
+        self.hapticd = com.HDevice("com8")
+    def test_extract(self):
+        """ Test extract function """
+        size = 5
+        for i in range(0, size):
+            self.hapticd.fifoin.put(bytes([i]))
+        fifoverif = bytearray(range(0, size))
+        fifotest = self.hapticd.extract(size)
+        self.assertEqual(fifotest, fifoverif)
+    def test_get(self):
+        """Test get function"""
+        var = "toto"
+        self.hapticd.fifoin.put(var)
+        self.assertEqual(self.hapticd.get(), var)
+    def test_readascii(self):
+        """Test readascii"""
+        var = "toto"
+        self.hapticd.fifoin.put(var.encode('ascii', 'backslashreplace'))
+        self.assertEqual(self.hapticd.readascii(), var)
+    def test_readsep(self):
+        """Test read with separateur"""
+        size = 8
+        var = ""
+        result = []
+        for i in range(0, size):
+            result.append(random.uniform(0, 50))
+            var = var + str(result[i]) + "|"
+        self.hapticd.fifoin.put(var.encode('ascii', 'backslashreplace'))
+        retour = self.hapticd.readsep(r"\|", size)[0]
+        for i in range(0, size):
+            self.assertEqual(float(retour[i]), result[i])
 if __name__ == '__main__':
     unittest.main()
