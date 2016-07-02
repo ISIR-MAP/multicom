@@ -5,6 +5,8 @@ Created on Thu Jun 16 17:54:49 2016
 """
 from threading import Thread
 from multiprocessing import Process, Queue
+import psutil
+import time
 
 class _DeviceProcess(Process):
     """ Process for in/out control """
@@ -29,6 +31,7 @@ class _DeviceProcess(Process):
             if self.fifoout.qsize() >= 1:
                 tosend = self.fifoout.get()
                 self.dev.write(tosend)
+            time.sleep(0.0001)
     def run(self):
         import pylibftdi
         try:
@@ -71,8 +74,8 @@ class _DeviceProcessserial(Process):
             self.dev = serial.Serial(self.com, 115200, timeout=None)#pylint: disable=W0201
         except serial.serialutil.SerialException:
             print('haptic device not found')
-        writing = Thread(target=self.write, args=("Thread-write",))
-        writing.start()
+        #writing = Thread(target=self.write, args=("Thread-write",))
+        #writing.start()
         lecturing = Thread(target=self.lecture, args=("Thread-read",))
         lecturing.start()
 
@@ -93,6 +96,10 @@ class HDevice:
     def launch(self):
         """ Launch the process for device communication """
         self.processdev.start()
+        pid = self.processdev.pid
+        p = psutil.Process(self.processdev.pid)
+        p.nice(psutil.HIGH_PRIORITY_CLASS)
+        print(str(pid) + "est le pid")
     def get(self):
         """ get byte from device """
         return self.fifoin.get()
@@ -120,7 +127,11 @@ class HDevice:
         for i in range(0,size):
             regexp = regexp + r"([0-9]+(?:\.[0-9]+)?)(?:" + sep + ")"
         #regexp = r"([0-9]+(?:\.[0-9]+)?)(?:\|)([0-9]+(?:\.[0-9]+)?)"
-        return re.findall(regexp, data)
+        retour = re.findall(regexp, data)
+        try:
+            return retour[0]
+        except Exception:
+            return (0,0,0,0)
     def incommingsize(self):
         """get the incomming buffer size"""
         return self.fifoin.qsize()
