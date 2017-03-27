@@ -5,6 +5,10 @@ Created on Thu Jun 16 17:54:49 2016
 """
 from threading import Thread
 from multiprocessing import Process, Queue
+import ctypes
+import psutil
+import time
+import sys
 
 class _DeviceProcess(Process):
     """ Process for in/out control """
@@ -28,12 +32,24 @@ class _DeviceProcess(Process):
         """ Write the information to the device """
         print(name +' started')
         while True:
-            if self.fifoout.qsize() >= 1:
+            while self.fifoout.qsize() >= 1:
+                #self.dev.flush_input()
+                #print(self.fifoout.qsize())
                 tosend = self.fifoout.get()
                 try:
-                    self.dev.write(tosend)
+                    byte_data = bytes(tosend)
+                except TypeError:
+                 # this will happen if we are Python3 and data is a str.
+                    byte_data = tosend.encode("latin1")
+                buf = ctypes.create_string_buffer(byte_data)
+                tc = self.dev.ftdi_fn.ftdi_write_data_submit(ctypes.byref(buf),len(byte_data))
+                #print("balbla")
+                #sys.stdout.flush()
+                #test = self.dev.fdll.ftdi_transfer_data_done(tc)
+                #print(test)
                 except:
                     print("Erreur ecriture")
+            time.sleep(0.0001)
     def run(self):
         import pylibftdi
         try:
@@ -98,6 +114,10 @@ class HDevice:
     def launch(self):
         """ Launch the process for device communication """
         self.processdev.start()
+        pid = self.processdev.pid
+        p = psutil.Process(self.processdev.pid)
+        p.nice(psutil.HIGH_PRIORITY_CLASS)
+        print(str(pid) + "est le pid")
     def get(self):
         """ get byte from device """
         return self.fifoin.get()
@@ -125,7 +145,11 @@ class HDevice:
         for i in range(0,size):
             regexp = regexp + r"([0-9]+(?:\.[0-9]+)?)(?:" + sep + ")"
         #regexp = r"([0-9]+(?:\.[0-9]+)?)(?:\|)([0-9]+(?:\.[0-9]+)?)"
-        return re.findall(regexp, data)
+        retour = re.findall(regexp, data)
+        try:
+            return retour[0]
+        except Exception:
+            return (0,0,0,0)
     def incommingsize(self):
         """get the incomming buffer size"""
         return self.fifoin.qsize()
