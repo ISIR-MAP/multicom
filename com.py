@@ -41,14 +41,14 @@ class _DeviceProcess(Process):
                 except TypeError:
                  # this will happen if we are Python3 and data is a str.
                     byte_data = tosend.encode("latin1")
+                except:
+                    print("Erreur ecriture")
                 buf = ctypes.create_string_buffer(byte_data)
                 tc = self.dev.ftdi_fn.ftdi_write_data_submit(ctypes.byref(buf),len(byte_data))
                 #print("balbla")
                 #sys.stdout.flush()
                 #test = self.dev.fdll.ftdi_transfer_data_done(tc)
                 #print(test)
-                except:
-                    print("Erreur ecriture")
             time.sleep(0.0001)
     def run(self):
         import pylibftdi
