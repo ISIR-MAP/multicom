@@ -22,13 +22,18 @@ class _DeviceProcess(Process):
             except (KeyboardInterrupt, SystemExit):
                 print("Exiting lecture...")
                 break
+            except:
+                print("Erreur Lecture")
     def write(self, name):
         """ Write the information to the device """
         print(name +' started')
         while True:
             if self.fifoout.qsize() >= 1:
                 tosend = self.fifoout.get()
-                self.dev.write(tosend)
+                try:
+                    self.dev.write(tosend)
+                except:
+                    print("Erreur ecriture")
     def run(self):
         import pylibftdi
         try:
